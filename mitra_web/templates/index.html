@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+<title>Mitra Dashboard</title>
+<style>
+body { background:#0e1422; color:white; font-family:Arial; margin:20px; }
+.card { background:#1b2335; padding:15px; border-radius:10px; margin-bottom:20px; }
+h2 { color:#5ba2ff; }
+img { width:100%; border-radius:10px; }
+pre { background:#111827; padding:10px; border-radius:10px; }
+button { padding:10px 15px; background:#4b85ff; color:white; border:none; border-radius:8px; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<h2>Mitra Unified Dashboard</h2>
+
+<div class="card">
+<h3>Live Object Detection</h3>
+<img src="/video">
+<pre id="det">Loading...</pre>
+</div>
+
+<div class="card">
+<h3>Lane Detection</h3>
+<img src="/lane">
+<pre id="lane">Loading...</pre>
+</div>
+
+<div class="card">
+<h3>Ask Assistant</h3>
+<button onclick="ask()">Ask: What do you see?</button>
+<pre id="reply">Waiting...</pre>
+</div>
+
+<script>
+async function update() {
+    let d = await fetch('/detections'); 
+    document.getElementById('det').textContent = JSON.stringify(await d.json(), null, 2);
+
+    let s = await fetch('/lane_state');
+    document.getElementById('lane').textContent = JSON.stringify(await s.json(), null, 2);
+}
+
+async function ask() {
+    let r = await fetch('/speak', {method:'POST'});
+    document.getElementById('reply').textContent = JSON.stringify(await r.json(),null,2);
+}
+
+setInterval(update, 2000);
+update();
+</script>
+
+</body>
+</html>
+<!doctype html>
+<html>
+<body style="background:#000;color:#fff;font-family:Arial;padding:20px;">
+<h2>Mitra Robot Dashboard</h2>
+<img src="/video_feed_stream" width="100%" />
+<h3>Detections</h3>
+<pre id="det"></pre>
+<h3>Lane</h3>
+<pre id="lane"></pre>
+<h3>Assistant reply</h3>
+<pre id="rep"></pre>
+<button onclick="speak()">Manual Speak</button>
+<script>
+async function upd(){
+  document.getElementById('det').textContent =
+    JSON.stringify(await (await fetch('/api/latest_detections')).json(),null,2);
+  document.getElementById('lane').textContent =
+    JSON.stringify(await (await fetch('/api/lane_state')).json(),null,2);
+}
+setInterval(upd,3000);
+async function speak(){
+  let det=await (await fetch('/api/latest_detections')).json();
+  let lane=await (await fetch('/api/lane_state')).json();
+  let r=await fetch('/api/speak',{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({query:"Describe briefly",detections:det,status:lane})});
+  document.getElementById('rep').textContent=JSON.stringify(await r.json(),null,2);
+}
+upd();
+</script>
+</body>
+</html>
